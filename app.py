@@ -1,38 +1,50 @@
 from flask import Flask, render_template, request, session
-from flask_session import Session
-import requests
 import os
+from datetime import timedelta
+from flask import jsonify
+from flask_cors import CORS
+import random
 
 app = Flask(__name__)
+CORS(app)
 app.secret_key = os.urandom(24)
-app.config['SESSION_TYPE'] = 'filesystem'
-Session(app)
+app.permanent_session_lifetime = timedelta(days=365)
+
+views = 0
+ip_list = []
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    if 'ip_history' not in session:
-        session['ip_history'] = []
-
-    # Get current IP
-    current_ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    if current_ip not in session['ip_history']:
-        session['ip_history'].append(current_ip)
-
-    # Default number of videos
-    num_videos = 1
-    video_urls = []
+    global views, ip_list
 
     if request.method == 'POST':
-        num_videos = int(request.form.get('num_videos', 1))
-        video_urls = [request.form.get(f'video_url_{i}', '') for i in range(num_videos)]
-        session['video_urls'] = video_urls
-        session['num_videos'] = num_videos
-    else:
-        video_urls = session.get('video_urls', [''])
-        num_videos = session.get('num_videos', len(video_urls))
+        urls = request.form.getlist('video_url')
+        counts = request.form.getlist('video_count')
+        video_data = []
 
-    return render_template('index.html',
-                           current_ip=current_ip,
-                           ip_history=session['ip_history'],
-                           video_urls=video_urls,
-                           num_videos=num_videos)
+        for i in range(len(urls)):
+            for _ in range(int(counts[i])):
+                video_data.append(urls[i])
+
+        session['video_data'] = video_data
+        return render_template('index.html', videos=video_data, views=views, ip_list=ip_list)
+
+    video_data = session.get('video_data', [])
+    views += 1
+
+    user_ip = request.remote_addr
+    ip_list.append(user_ip)
+
+    return render_template('index.html', videos=video_data, views=views, ip_list=ip_list)
+
+
+@app.route('/reset', methods=['POST'])
+def reset_data():
+    global views, ip_list
+    views = 0
+    ip_list = []
+    return jsonify({'message': 'Data reset successful'})
+
+
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=10000)
