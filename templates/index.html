@@ -2,90 +2,54 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Dynamic Video Embed</title>
+    <title>YouTube Auto Viewer</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <script src="{{ url_for('static', filename='script.js') }}"></script>
 </head>
 <body>
-    <button id="darkModeToggle">Toggle Dark Mode</button>
-    <h2>Current IP: {{ current_ip }}</h2>
-    <h3>IP History:</h3>
-    <ul>
-        {% for ip in ip_history %}
-            <li>{{ ip }}</li>
-        {% endfor %}
-    </ul>
+    <h1>YouTube Auto Viewer</h1>
 
+    <button id="darkModeToggle">Toggle Dark Mode</button>
     <form method="POST">
-        <label for="num_videos">Number of Videos (1-10):</label>
-        <input type="number" id="num_videos" name="num_videos" min="1" max="10" value="{{ num_videos }}">
-        <div id="videoInputs">
-            {% for i in range(num_videos) %}
-                <label for="video_url_{{ i }}">Video URL {{ i+1 }}:</label>
-                <input type="text" id="video_url_{{ i }}" name="video_url_{{ i }}" value="{{ video_urls[i] if i < video_urls|length else '' }}">
-            {% endfor %}
+        <div id="url-inputs">
+            <input type="url" name="video_url" placeholder="YouTube URL" required>
+            <input type="number" name="video_count" placeholder="No. of Boxes" min="1" required>
         </div>
-        <button type="submit">Update Videos</button>
+        <button type="button" onclick="addMore()">Add More URLs</button>
+        <button type="submit">Start Playing</button>
     </form>
 
-    <div id="videos">
-        {% for url in video_urls %}
-            <div class="video-container">
-                <iframe width="560" height="315" src="{{ url }}?autoplay=1&mute=1&loop=1&playlist={{ url.split('/')[-1] }}" frameborder="0" allow="autoplay; encrypted-media" allowfullscreen></iframe>
-                <button class="change-url">Change URL</button>
-            </div>
+    <div id="info">
+        <p><strong>Views Count:</strong> {{ views }}</p>
+        <p><strong>Data Used:</strong> <span id="totalData">0</span> MB</p>
+        <p><strong>Speed:</strong> <span id="currentSpeed">0</span> Mbps</p>
+        <button id="resetData">Reset Data</button>
+    </div>
+
+    <div class="video-container">
+        {% for url in videos %}
+        <div class="video-box">
+            <iframe width="300" height="180" 
+                src="https://www.youtube.com/embed/{{ url.split('v=')[1].split('&')[0] if 'v=' in url else url.split('/')[-1] }}?autoplay=1&mute=1&loop=1&playlist={{ url.split('v=')[1].split('&')[0] if 'v=' in url else url.split('/')[-1] }}&vq=small"
+                allow="autoplay" allowfullscreen></iframe>
+            <button class="change-url">Change URL</button>
+        </div>
         {% endfor %}
     </div>
 
-    <div id="dataUsage">
-        <p>Total Data Used: <span id="totalData">0</span> MB</p>
-        <p>Current Speed: <span id="currentSpeed">0</span> Mbps</p>
-        <button id="resetData">Reset Data Usage</button>
+    <div>
+        <h3>All IPs:</h3>
+        <ul>
+            {% for ip in ip_list %}
+                <li>{{ ip }}</li>
+            {% endfor %}
+        </ul>
     </div>
 
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
     <script>
-        // Dark Mode Toggle
-        document.getElementById('darkModeToggle').addEventListener('click', function() {
-            document.body.classList.toggle('dark-mode');
-        });
-
-        // Auto-refresh every 45 seconds
-        setTimeout(function() {
+        setTimeout(() => {
             location.reload();
         }, 45000);
-
-        // Data Usage Simulation
-        let totalData = localStorage.getItem('totalData') || 0;
-        let totalDataElem = document.getElementById('totalData');
-        let currentSpeedElem = document.getElementById('currentSpeed');
-
-        function updateDataUsage() {
-            let speed = (Math.random() * 5 + 1).toFixed(2); // Simulated speed between 1 and 6 Mbps
-            let dataUsed = (speed * 5.625 / 8).toFixed(2); // Convert Mbps to MB per 45 seconds
-            totalData = (parseFloat(totalData) + parseFloat(dataUsed)).toFixed(2);
-            localStorage.setItem('totalData', totalData);
-            totalDataElem.textContent = totalData;
-            currentSpeedElem.textContent = speed;
-        }
-
-        setInterval(updateDataUsage, 5000); // Update every 5 seconds
-
-        document.getElementById('resetData').addEventListener('click', function() {
-            totalData = 0;
-            localStorage.setItem('totalData', totalData);
-            totalDataElem.textContent = totalData;
-            currentSpeedElem.textContent = '0';
-        });
-
-        // Change URL functionality
-        document.querySelectorAll('.change-url').forEach(function(button, index) {
-            button.addEventListener('click', function() {
-                let newUrl = prompt('Enter new YouTube URL:');
-                if (newUrl) {
-                    document.querySelectorAll('iframe')[index].src = `${newUrl}?autoplay=1&mute=1&loop=1&playlist=${newUrl.split('/').pop()}`;
-                }
-            });
-        });
     </script>
 </body>
 </html>
