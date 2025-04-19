@@ -1,50 +1,38 @@
-from flask import Flask, render_template, request, session
-import os
-from datetime import timedelta
-from flask import jsonify
-from flask_cors import CORS
+from flask import Flask, render_template, request, redirect, url_for, session
 import random
 
 app = Flask(__name__)
-CORS(app)
-app.secret_key = os.urandom(24)
-app.permanent_session_lifetime = timedelta(days=365)
+app.secret_key = 'your-secret-key'
 
-views = 0
-ip_list = []
+def convert_to_embed(url):
+    if 'youtube.com/shorts/' in url:
+        video_id = url.split('/')[-1].split('?')[0]
+    elif 'watch?v=' in url:
+        video_id = url.split('watch?v=')[-1].split('&')[0]
+    elif 'youtu.be/' in url:
+        video_id = url.split('/')[-1].split('?')[0]
+    else:
+        return None  # not valid
+
+    return f"https://www.youtube.com/embed/{video_id}?autoplay=1&mute=1&loop=1&playlist={video_id}&vq=small"
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-    global views, ip_list
-
     if request.method == 'POST':
         urls = request.form.getlist('video_url')
-        counts = request.form.getlist('video_count')
-        video_data = []
+        box_counts = request.form.getlist('video_count')
+        combined = []
 
-        for i in range(len(urls)):
-            for _ in range(int(counts[i])):
-                video_data.append(urls[i])
+        for url, count in zip(urls, box_counts):
+            embed = convert_to_embed(url)
+            if embed:
+                combined.extend([embed] * int(count))
 
-        session['video_data'] = video_data
-        return render_template('index.html', videos=video_data, views=views, ip_list=ip_list)
+        session['videos'] = combined
+        session['play_count'] = 0
+        session['ips'] = []
+        session['data_used'] = 0
+        return redirect(url_for('index'))
 
-    video_data = session.get('video_data', [])
-    views += 1
-
-    user_ip = request.remote_addr
-    ip_list.append(user_ip)
-
-    return render_template('index.html', videos=video_data, views=views, ip_list=ip_list)
-
-
-@app.route('/reset', methods=['POST'])
-def reset_data():
-    global views, ip_list
-    views = 0
-    ip_list = []
-    return jsonify({'message': 'Data reset successful'})
-
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=10000)
+    videos = session.get('videos', [])
+    return render_template('index.html', videos=videos)
