@@ -2,54 +2,36 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>YouTube Auto Viewer</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YouTube Video Player</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
 </head>
 <body>
-    <h1>YouTube Auto Viewer</h1>
+    <div class="container">
+        <h1>Play YouTube Video in 9 Boxes</h1>
 
-    <button id="darkModeToggle">Toggle Dark Mode</button>
-    <form method="POST">
-        <div id="url-inputs">
-            <input type="url" name="video_url" placeholder="YouTube URL" required>
-            <input type="number" name="video_count" placeholder="No. of Boxes" min="1" required>
-        </div>
-        <button type="button" onclick="addMore()">Add More URLs</button>
-        <button type="submit">Start Playing</button>
-    </form>
+        <!-- Form to input YouTube video URL -->
+        <form method="POST">
+            <label for="video_url">Enter YouTube Video URL:</label><br>
+            <input type="url" name="video_url" placeholder="https://www.youtube.com/watch?v=..." required>
+            <button type="submit">Play Video</button>
+        </form>
 
-    <div id="info">
-        <p><strong>Views Count:</strong> {{ views }}</p>
-        <p><strong>Data Used:</strong> <span id="totalData">0</span> MB</p>
-        <p><strong>Speed:</strong> <span id="currentSpeed">0</span> Mbps</p>
-        <button id="resetData">Reset Data</button>
-    </div>
-
-    <div class="video-container">
-        {% for url in videos %}
-        <div class="video-box">
-            <iframe width="300" height="180" 
-                src="https://www.youtube.com/embed/{{ url.split('v=')[1].split('&')[0] if 'v=' in url else url.split('/')[-1] }}?autoplay=1&mute=1&loop=1&playlist={{ url.split('v=')[1].split('&')[0] if 'v=' in url else url.split('/')[-1] }}&vq=small"
-                allow="autoplay" allowfullscreen></iframe>
-            <button class="change-url">Change URL</button>
-        </div>
-        {% endfor %}
-    </div>
-
-    <div>
-        <h3>All IPs:</h3>
-        <ul>
-            {% for ip in ip_list %}
-                <li>{{ ip }}</li>
+        <div class="video-container">
+            <!-- Display 9 video boxes -->
+            {% for video in videos %}
+            <div class="video-box">
+                <iframe width="320" height="180"
+                        src="{{ video }}"
+                        frameborder="0"
+                        allow="autoplay; encrypted-media"
+                        allowfullscreen>
+                </iframe>
+            </div>
             {% endfor %}
-        </ul>
+        </div>
     </div>
 
     <script src="{{ url_for('static', filename='script.js') }}"></script>
-    <script>
-        setTimeout(() => {
-            location.reload();
-        }, 45000);
-    </script>
 </body>
 </html>
